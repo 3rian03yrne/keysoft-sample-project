@@ -1,0 +1,29 @@
+# .github/workflows/deps.yml — runs on every PR
+name: Deps report
+on:
+  pull_request:
+
+permissions:
+  contents: read                             # so actions/checkout can clone the repo
+  pull-requests: write                       # so gh can post the report comment
+
+jobs:
+  deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: npm install -g @anthropic-ai/claude-code
+      - name: Dependency report
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # the ONE secret you add
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}                 # auto-provided; permissions: above lets it post
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # "/deps ." invokes YOUR skill — a prose prompt would let Claude improvise instead.
+          # --allowedTools: no trust dialog on a runner, so the skill's own list never applies.
+          # jq -r .result: the json envelope also holds session_id + cost — post only the report.
+          claude -p "/deps ." --allowedTools "Read,Grep,Bash,Write" --output-format json > out.json
+          jq -r '.result' out.json > report.md
+          gh pr comment "$PR" --body-file report.md   # gh is pre-installed on the runner
