@@ -10,4 +10,3 @@ argument-hint: [path]
 * Flag outdated dependencies
 * Categorize severity of findings low/medium/high
 * Include a top level one sentence summary of the findings with a PASS/FAIL
-* write to deps-report.md
